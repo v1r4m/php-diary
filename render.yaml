@@ -1,0 +1,54 @@
+services:
+  # Web Service (Laravel Application)
+  - type: web
+    name: diary-app
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    envVars:
+      - key: APP_NAME
+        value: Diary Service
+      - key: APP_ENV
+        value: production
+      - key: APP_DEBUG
+        value: false
+      - key: APP_KEY
+        generateValue: true
+      - key: APP_URL
+        value: https://diary-app.onrender.com
+      - key: DB_CONNECTION
+        value: pgsql
+      - key: DB_HOST
+        fromDatabase:
+          name: diary-db
+          property: host
+      - key: DB_PORT
+        fromDatabase:
+          name: diary-db
+          property: port
+      - key: DB_DATABASE
+        fromDatabase:
+          name: diary-db
+          property: database
+      - key: DB_USERNAME
+        fromDatabase:
+          name: diary-db
+          property: user
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: diary-db
+          property: password
+      - key: LOG_CHANNEL
+        value: stack
+      - key: SESSION_DRIVER
+        value: file
+      - key: CACHE_DRIVER
+        value: file
+    buildCommand: composer install --no-dev --optimize-autoloader && php artisan config:cache && php artisan route:cache && php artisan view:cache
+    startCommand: php artisan migrate --force && php artisan serve --host=0.0.0.0 --port=$PORT
+
+  # MySQL Database
+databases:
+  - name: diary-db
+    databaseName: diary_db
+    user: diary_user

@@ -1,0 +1,65 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: diary-app
+    restart: unless-stopped
+    working_dir: /var/www
+    volumes:
+      - ./:/var/www
+      - ./docker/php/local.ini:/usr/local/etc/php/conf.d/local.ini
+    networks:
+      - diary-network
+    depends_on:
+      - db
+    environment:
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_DATABASE=${DB_DATABASE:-diary_db}
+      - DB_USERNAME=${DB_USERNAME:-diary_user}
+      - DB_PASSWORD=${DB_PASSWORD:-secret}
+
+  nginx:
+    image: nginx:alpine
+    container_name: diary-nginx
+    restart: unless-stopped
+    ports:
+      - "${APP_PORT:-8000}:80"
+    volumes:
+      - ./:/var/www
+      - ./docker/nginx/nginx.conf:/etc/nginx/conf.d/default.conf
+    networks:
+      - diary-network
+    depends_on:
+      - app
+
+  db:
+    image: postgres:16-alpine
+    container_name: diary-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_DATABASE:-diary_db}
+      POSTGRES_USER: ${DB_USERNAME:-diary_user}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-secret}
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    networks:
+      - diary-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-diary_user}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+networks:
+  diary-network:
+    driver: bridge
+
+volumes:
+  db-data:
+    driver: local
