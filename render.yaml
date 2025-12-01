@@ -7,15 +7,15 @@ services:
     dockerContext: .
     envVars:
       - key: APP_NAME
-        value: Diary Service
+        value: "Diary Service"
       - key: APP_ENV
         value: production
       - key: APP_DEBUG
-        value: false
+        value: "false"
       - key: APP_KEY
         generateValue: true
       - key: APP_URL
-        value: https://diary-app.onrender.com
+        sync: false
       - key: DB_CONNECTION
         value: pgsql
       - key: DB_HOST
@@ -38,17 +38,17 @@ services:
         fromDatabase:
           name: diary-db
           property: password
+      - key: DB_SSLMODE
+        value: require
       - key: LOG_CHANNEL
-        value: stack
+        value: stderr
       - key: SESSION_DRIVER
         value: file
       - key: CACHE_DRIVER
         value: file
-    buildCommand: composer install --no-dev --optimize-autoloader && php artisan config:cache && php artisan route:cache && php artisan view:cache
-    startCommand: php artisan migrate --force && php artisan serve --host=0.0.0.0 --port=$PORT
 
-  # MySQL Database
 databases:
   - name: diary-db
     databaseName: diary_db
     user: diary_user
+    plan: free

@@ -28,20 +28,38 @@ WORKDIR /var/www
 # Copy existing application directory contents
 COPY . /var/www
 
-# Copy nginx configuration
-COPY docker/nginx/nginx.conf /etc/nginx/sites-available/default
+# Copy nginx configuration for single-container (Render) deployment
+COPY docker/nginx/nginx-render.conf /etc/nginx/sites-available/default
+RUN ln -sf /etc/nginx/sites-available/default /etc/nginx/sites-enabled/default
 
 # Create required directories and set permissions
-RUN mkdir -p /var/www/storage /var/www/bootstrap/cache && \
+RUN mkdir -p /var/www/storage/framework/sessions \
+    /var/www/storage/framework/views \
+    /var/www/storage/framework/cache \
+    /var/www/storage/logs \
+    /var/www/bootstrap/cache && \
     chown -R www-data:www-data /var/www && \
     chmod -R 775 /var/www/storage /var/www/bootstrap/cache
 
 # Install composer dependencies
 RUN composer install --no-dev --optimize-autoloader
 
-# Create startup script
+# Create startup script with migrations
 RUN echo '#!/bin/bash\n\
+set -e\n\
+\n\
+# Run migrations\n\
+php artisan migrate --force\n\
+\n\
+# Clear and cache config\n\
+php artisan config:clear\n\
+php artisan route:clear\n\
+php artisan view:clear\n\
+\n\
+# Start PHP-FPM in background\n\
 php-fpm -D\n\
+\n\
+# Start nginx in foreground\n\
 nginx -g "daemon off;"\n\
 ' > /start.sh && chmod +x /start.sh
 
