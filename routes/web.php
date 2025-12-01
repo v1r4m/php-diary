@@ -1,8 +1,8 @@
 <?php
 
+use App\Http\Controllers\AuthController;
+use App\Http\Controllers\DiaryController;
 use Illuminate\Support\Facades\Route;
-use App\Models\HelloWorld;
-use App\Services\DiaryEncryptionService;
 
 /*
 |--------------------------------------------------------------------------
@@ -15,93 +15,39 @@ use App\Services\DiaryEncryptionService;
 |
 */
 
-// Hello World route - Test database connection
+// Home - redirect to diary or login
 Route::get('/', function () {
-    try {
-        $message = HelloWorld::first();
-        return response()->json([
-            'status' => 'success',
-            'message' => $message ? $message->message : 'No message found',
-            'database' => 'connected'
-        ]);
-    } catch (\Exception $e) {
-        return response()->json([
-            'status' => 'error',
-            'message' => 'Database connection failed',
-            'error' => $e->getMessage()
-        ], 500);
+    if (auth()->check()) {
+        return redirect()->route('diary.index');
     }
+    return redirect()->route('login');
 });
 
-// Test encryption/decryption
-Route::get('/test-encryption', function () {
-    $encryptionService = new DiaryEncryptionService();
+// Guest routes (login/register)
+Route::middleware('guest')->group(function () {
+    Route::get('/login', [AuthController::class, 'showLoginForm'])->name('login');
+    Route::post('/login', [AuthController::class, 'login']);
+    Route::get('/register', [AuthController::class, 'showRegisterForm'])->name('register');
+    Route::post('/register', [AuthController::class, 'register']);
+});
 
-    // Sample data
-    $password = 'user_secret_password_123';
-    $content = 'This is my secret diary entry that nobody should be able to read!';
-    $title = 'My Secret Day';
+// Authenticated routes
+Route::middleware('auth')->group(function () {
+    Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
+    Route::get('/me', [AuthController::class, 'me'])->name('me');
+    Route::post('/diary-token', [AuthController::class, 'storeDiaryToken'])->name('diary.token.store');
 
-    // Generate salt and IV
-    $salt = $encryptionService->generateSalt();
-    $iv = $encryptionService->generateIV();
+    // Diary page (view)
+    Route::get('/diary', [DiaryController::class, 'index'])->name('diary.index');
 
-    // Encrypt
-    $encryptedContent = $encryptionService->encrypt($content, $password, $salt, $iv);
-    $encryptedTitle = $encryptionService->encryptTitle($title, $password, $salt, $iv);
-
-    // Decrypt
-    $decryptedContent = $encryptionService->decrypt(
-        $encryptedContent['encrypted'],
-        $encryptedContent['tag'],
-        $password,
-        $salt,
-        $iv
-    );
-
-    $decryptedTitle = $encryptionService->decryptTitle(
-        $encryptedTitle['encrypted'],
-        $encryptedTitle['tag'],
-        $password,
-        $salt,
-        $iv
-    );
-
-    // Try with wrong password
-    $wrongPasswordError = null;
-    try {
-        $encryptionService->decrypt(
-            $encryptedContent['encrypted'],
-            $encryptedContent['tag'],
-            'wrong_password',
-            $salt,
-            $iv
-        );
-    } catch (\Exception $e) {
-        $wrongPasswordError = $e->getMessage();
-    }
-
-    return response()->json([
-        'status' => 'success',
-        'test' => [
-            'original_title' => $title,
-            'original_content' => $content,
-            'encrypted_title' => $encryptedTitle['encrypted'],
-            'encrypted_content' => $encryptedContent['encrypted'],
-            'decrypted_title' => $decryptedTitle,
-            'decrypted_content' => $decryptedContent,
-            'salt' => $salt,
-            'iv' => $iv,
-            'wrong_password_error' => $wrongPasswordError,
-            'encryption_verified' => ($decryptedContent === $content && $decryptedTitle === $title)
-        ],
-        'security_notes' => [
-            'encryption_algorithm' => 'AES-256-GCM',
-            'key_derivation' => 'PBKDF2 with 100,000 iterations',
-            'admin_cannot_decrypt' => 'Encryption key is derived from user password',
-            'password_never_stored' => 'Only hashed password is stored in database'
-        ]
-    ]);
+    // Diary API routes (require both auth session AND diary_token)
+    Route::middleware('diary.token')->prefix('api/diary')->group(function () {
+        Route::get('/', [DiaryController::class, 'list'])->name('diary.list');
+        Route::get('/{id}', [DiaryController::class, 'show'])->name('diary.show');
+        Route::post('/', [DiaryController::class, 'store'])->name('diary.store');
+        Route::put('/{id}', [DiaryController::class, 'update'])->name('diary.update');
+        Route::delete('/{id}', [DiaryController::class, 'destroy'])->name('diary.destroy');
+    });
 });
 
 // API Info
@@ -113,13 +59,14 @@ Route::get('/api/info', function () {
             'End-to-end encryption',
             'Client-side key derivation',
             'AES-256-GCM encryption',
-            'Public/Private diary support'
+            'Zero-knowledge architecture'
         ],
         'security' => [
             'Diary content encrypted with user password',
             'Admins cannot read diary content',
             'Each diary has unique salt and IV',
-            'Password recovery = data loss (by design)'
+            'Password recovery = data loss (by design)',
+            'Dual authentication: session + diary_token'
         ]
     ]);
 });

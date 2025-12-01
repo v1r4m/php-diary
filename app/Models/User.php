@@ -20,6 +20,8 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'diary_token_hash',
+        'encryption_salt',
     ];
 
     /**
@@ -30,6 +32,7 @@ class User extends Authenticatable
     protected $hidden = [
         'password',
         'remember_token',
+        'diary_token_hash',
     ];
 
     /**
@@ -47,5 +50,25 @@ class User extends Authenticatable
     public function diaries()
     {
         return $this->hasMany(Diary::class);
+    }
+
+    /**
+     * Generate a random encryption salt for this user.
+     */
+    public static function generateEncryptionSalt(): string
+    {
+        return base64_encode(random_bytes(32));
+    }
+
+    /**
+     * Verify if the provided diary token matches the stored hash.
+     */
+    public function verifyDiaryToken(string $diaryToken): bool
+    {
+        if (empty($this->diary_token_hash)) {
+            return false;
+        }
+
+        return hash_equals($this->diary_token_hash, hash('sha256', $diaryToken));
     }
 }
