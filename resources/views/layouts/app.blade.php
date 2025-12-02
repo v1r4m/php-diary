@@ -11,8 +11,12 @@
     <div class="container">
         @if(auth()->check())
         <nav class="navbar">
-            <div class="navbar-brand">Encrypted Diary</div>
+            <div class="navbar-brand">
+                <a href="{{ route('diary.index') }}">Encrypted Diary</a>
+            </div>
             <div class="navbar-menu">
+                <a href="{{ route('diary.index') }}" class="navbar-link">내 일기</a>
+                <a href="{{ route('settings.index') }}" class="navbar-link">설정</a>
                 <span class="navbar-user">{{ auth()->user()->name }}</span>
                 <form action="{{ route('logout') }}" method="POST" class="logout-form">
                     @csrf

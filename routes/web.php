@@ -3,6 +3,7 @@
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DiaryController;
 use App\Http\Controllers\PublicDiaryController;
+use App\Http\Controllers\SettingsController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -40,6 +41,10 @@ Route::middleware('auth')->group(function () {
 
     // Diary page (view)
     Route::get('/diary', [DiaryController::class, 'index'])->name('diary.index');
+
+    // Settings
+    Route::get('/settings', [SettingsController::class, 'index'])->name('settings.index');
+    Route::post('/settings/username', [SettingsController::class, 'updateUsername'])->name('settings.username');
 
     // Diary API routes (require both auth session AND diary_token)
     Route::middleware('diary.token')->prefix('api/diary')->group(function () {
