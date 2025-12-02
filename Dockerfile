@@ -28,6 +28,9 @@ WORKDIR /var/www
 # Copy existing application directory contents
 COPY . /var/www
 
+# Remove local .env to use Render's environment variables
+RUN rm -f /var/www/.env
+
 # Copy nginx configuration for single-container (Render) deployment
 COPY docker/nginx/nginx-render.conf /etc/nginx/sites-available/default
 RUN ln -sf /etc/nginx/sites-available/default /etc/nginx/sites-enabled/default
@@ -48,13 +51,26 @@ RUN composer install --no-dev --optimize-autoloader
 RUN echo '#!/bin/bash\n\
 set -e\n\
 \n\
-# Run migrations\n\
-php artisan migrate --force\n\
-\n\
-# Clear and cache config\n\
+# Clear cached config to use runtime env vars\n\
 php artisan config:clear\n\
 php artisan route:clear\n\
 php artisan view:clear\n\
+php artisan cache:clear || true\n\
+\n\
+# Debug: show database connection info\n\
+echo "DB_HOST: $DB_HOST"\n\
+echo "DB_DATABASE: $DB_DATABASE"\n\
+\n\
+# Wait for database to be ready\n\
+echo "Waiting for database..."\n\
+for i in $(seq 1 30); do\n\
+  php artisan migrate:status > /dev/null 2>&1 && break\n\
+  echo "Attempt $i: Database not ready, waiting..."\n\
+  sleep 2\n\
+done\n\
+\n\
+# Run migrations\n\
+php artisan migrate --force\n\
 \n\
 # Start PHP-FPM in background\n\
 php-fpm -D\n\
