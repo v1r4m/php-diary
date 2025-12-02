@@ -11,8 +11,12 @@
     <div class="container">
         <?php if(auth()->check()): ?>
         <nav class="navbar">
-            <div class="navbar-brand">Encrypted Diary</div>
+            <div class="navbar-brand">
+                <a href="<?php echo e(route('diary.index')); ?>">Encrypted Diary</a>
+            </div>
             <div class="navbar-menu">
+                <a href="<?php echo e(route('diary.index')); ?>" class="navbar-link">내 일기</a>
+                <a href="<?php echo e(route('settings.index')); ?>" class="navbar-link">설정</a>
                 <span class="navbar-user"><?php echo e(auth()->user()->name); ?></span>
                 <form action="<?php echo e(route('logout')); ?>" method="POST" class="logout-form">
                     <?php echo csrf_field(); ?>
