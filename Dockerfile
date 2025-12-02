@@ -53,17 +53,25 @@ RUN composer install --no-dev --optimize-autoloader
 RUN echo '#!/bin/bash\n\
 set -e\n\
 \n\
+# Force SQLite configuration\n\
+export DB_CONNECTION=sqlite\n\
+export DB_DATABASE=/var/www/storage/database/diary.sqlite\n\
+\n\
 # Ensure SQLite database exists and has correct permissions\n\
 mkdir -p /var/www/storage/database\n\
 touch /var/www/storage/database/diary.sqlite\n\
 chown -R www-data:www-data /var/www/storage\n\
 chmod -R 775 /var/www/storage\n\
 \n\
-# Clear cached config to use runtime env vars\n\
+# Clear cached config\n\
 php artisan config:clear\n\
 php artisan route:clear\n\
 php artisan view:clear\n\
 php artisan cache:clear || true\n\
+\n\
+# Debug: show DB config\n\
+echo "DB_CONNECTION: $DB_CONNECTION"\n\
+echo "DB_DATABASE: $DB_DATABASE"\n\
 \n\
 # Run migrations\n\
 echo "Running migrations..."\n\
