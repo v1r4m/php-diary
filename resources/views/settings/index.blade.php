@@ -73,6 +73,19 @@
         </div>
     </div>
 
+    <div class="settings-card">
+        <h2>암호화 키 관리</h2>
+        <p>현재 브라우저에 저장된 암호화 키 상태:</p>
+        <div class="info-row">
+            <span class="info-label">키 저장 상태</span>
+            <span class="info-value" id="key-status">확인 중...</span>
+        </div>
+        <div id="clear-key-section" style="display: none; margin-top: 15px;">
+            <button type="button" class="btn btn-danger" id="clear-key-btn">저장된 키 삭제</button>
+            <span class="form-hint">삭제하면 다음 접속 시 비밀번호를 다시 입력해야 합니다.</span>
+        </div>
+    </div>
+
     <div class="settings-card warning-card">
         <h2>보안 안내</h2>
         <p>
@@ -194,6 +207,32 @@ document.getElementById('username').addEventListener('input', function(e) {
     const username = e.target.value || '[username]';
     document.getElementById('profile-url-preview').textContent =
         '{{ url('/@') }}' + '/' + username;
+});
+
+// Check key status
+document.addEventListener('DOMContentLoaded', function() {
+    const keyStatus = document.getElementById('key-status');
+    const clearKeySection = document.getElementById('clear-key-section');
+    const clearKeyBtn = document.getElementById('clear-key-btn');
+
+    if (DiaryEncryption.isKeySaved()) {
+        keyStatus.textContent = '저장됨';
+        keyStatus.style.color = '#28a745';
+        clearKeySection.style.display = 'block';
+    } else {
+        keyStatus.textContent = '저장되지 않음';
+        keyStatus.style.color = '#6c757d';
+    }
+
+    clearKeyBtn.addEventListener('click', async function() {
+        if (confirm('저장된 암호화 키를 삭제하시겠습니까?\n다음 접속 시 비밀번호를 다시 입력해야 합니다.')) {
+            await DiaryEncryption.clearAll();
+            keyStatus.textContent = '저장되지 않음';
+            keyStatus.style.color = '#6c757d';
+            clearKeySection.style.display = 'none';
+            alert('암호화 키가 삭제되었습니다.');
+        }
+    });
 });
 </script>
 @endsection

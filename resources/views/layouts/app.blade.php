@@ -18,7 +18,7 @@
                 <a href="{{ route('diary.index') }}" class="navbar-link">내 일기</a>
                 <a href="{{ route('settings.index') }}" class="navbar-link">설정</a>
                 <span class="navbar-user">{{ auth()->user()->name }}</span>
-                <form action="{{ route('logout') }}" method="POST" class="logout-form">
+                <form action="{{ route('logout') }}" method="POST" class="logout-form" id="logout-form">
                     @csrf
                     <button type="submit" class="btn btn-logout">Logout</button>
                 </form>
@@ -32,6 +32,22 @@
     </div>
 
     <script src="{{ asset('js/crypto.js') }}"></script>
+    <script>
+    // Clear encryption keys on logout
+    document.addEventListener('DOMContentLoaded', function() {
+        const logoutForm = document.getElementById('logout-form');
+        if (logoutForm) {
+            logoutForm.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                if (typeof DiaryEncryption !== 'undefined') {
+                    await DiaryEncryption.clearAll();
+                    DiaryEncryption.clearDiaryToken();
+                }
+                logoutForm.submit();
+            });
+        }
+    });
+    </script>
     @yield('scripts')
 </body>
 </html>

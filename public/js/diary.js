@@ -18,7 +18,7 @@
 
     // DOM Elements
     let unlockModal, diaryApp, diaryList, editorModal, deleteModal;
-    let unlockForm, unlockPassword, unlockError;
+    let unlockForm, unlockPassword, unlockError, unlockRemember;
     let diaryForm, diaryIdInput, diaryTitleInput, diaryContentInput, editorTitle;
     let diaryPublicCheckbox, publicWarning;
 
@@ -35,6 +35,7 @@
         unlockForm = document.getElementById('unlock-form');
         unlockPassword = document.getElementById('unlock-password');
         unlockError = document.getElementById('unlock-error');
+        unlockRemember = document.getElementById('unlock-remember');
 
         diaryForm = document.getElementById('diary-form');
         diaryIdInput = document.getElementById('diary-id');
@@ -112,10 +113,11 @@
 
         const password = unlockPassword.value;
         const salt = USER_DATA.encryptionSalt;
+        const remember = unlockRemember.checked;
 
         try {
             // Initialize encryption with password
-            const success = await DiaryEncryption.initialize(password, salt);
+            const success = await DiaryEncryption.initialize(password, salt, remember);
 
             if (!success) {
                 showUnlockError('Failed to initialize encryption');
@@ -474,8 +476,20 @@
     /**
      * Initialize the diary page
      */
-    function init() {
+    async function init() {
         initElements();
+
+        // Try to restore saved key from IndexedDB
+        if (DiaryEncryption.isKeySaved() && DiaryEncryption.getDiaryToken()) {
+            const restored = await DiaryEncryption.tryRestoreKey();
+            if (restored) {
+                unlockModal.style.display = 'none';
+                diaryApp.style.display = 'block';
+                loadDiaries();
+                setupEventListeners();
+                return;
+            }
+        }
 
         // Check if encryption is already initialized (from login/register)
         if (DiaryEncryption.isInitialized() && DiaryEncryption.getDiaryToken()) {
@@ -488,7 +502,17 @@
             diaryApp.style.display = 'none';
         }
 
-        // Event listeners
+        setupEventListeners();
+    }
+
+    /**
+     * Setup event listeners (called once)
+     */
+    let _listenersSetup = false;
+    function setupEventListeners() {
+        if (_listenersSetup) return;
+        _listenersSetup = true;
+
         unlockForm.addEventListener('submit', handleUnlock);
         diaryForm.addEventListener('submit', handleSave);
 

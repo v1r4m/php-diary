@@ -18,8 +18,92 @@ const DiaryEncryption = (function() {
     const SALT_LENGTH = 32; // bytes
 
     // In-memory storage for the derived encryption key
-    // This is cleared on page refresh/close
     let _diaryKey = null;
+
+    // IndexedDB for persistent key storage
+    const DB_NAME = 'DiaryEncryptionDB';
+    const STORE_NAME = 'keys';
+    const KEY_ID = 'diaryKey';
+
+    /**
+     * Open IndexedDB
+     */
+    function openDB() {
+        return new Promise((resolve, reject) => {
+            const request = indexedDB.open(DB_NAME, 1);
+            request.onerror = () => reject(request.error);
+            request.onsuccess = () => resolve(request.result);
+            request.onupgradeneeded = (event) => {
+                const db = event.target.result;
+                if (!db.objectStoreNames.contains(STORE_NAME)) {
+                    db.createObjectStore(STORE_NAME, { keyPath: 'id' });
+                }
+            };
+        });
+    }
+
+    /**
+     * Save key to IndexedDB (persistent storage)
+     */
+    async function saveKeyToStorage(key) {
+        try {
+            const db = await openDB();
+            const tx = db.transaction(STORE_NAME, 'readwrite');
+            const store = tx.objectStore(STORE_NAME);
+            store.put({ id: KEY_ID, key: key });
+            await new Promise((resolve, reject) => {
+                tx.oncomplete = resolve;
+                tx.onerror = () => reject(tx.error);
+            });
+            db.close();
+            return true;
+        } catch (error) {
+            console.error('Failed to save key to storage:', error);
+            return false;
+        }
+    }
+
+    /**
+     * Load key from IndexedDB
+     */
+    async function loadKeyFromStorage() {
+        try {
+            const db = await openDB();
+            const tx = db.transaction(STORE_NAME, 'readonly');
+            const store = tx.objectStore(STORE_NAME);
+            const request = store.get(KEY_ID);
+            const result = await new Promise((resolve, reject) => {
+                request.onsuccess = () => resolve(request.result);
+                request.onerror = () => reject(request.error);
+            });
+            db.close();
+            return result ? result.key : null;
+        } catch (error) {
+            console.error('Failed to load key from storage:', error);
+            return null;
+        }
+    }
+
+    /**
+     * Clear key from IndexedDB
+     */
+    async function clearKeyFromStorage() {
+        try {
+            const db = await openDB();
+            const tx = db.transaction(STORE_NAME, 'readwrite');
+            const store = tx.objectStore(STORE_NAME);
+            store.delete(KEY_ID);
+            await new Promise((resolve, reject) => {
+                tx.oncomplete = resolve;
+                tx.onerror = () => reject(tx.error);
+            });
+            db.close();
+            return true;
+        } catch (error) {
+            console.error('Failed to clear key from storage:', error);
+            return false;
+        }
+    }
 
     /**
      * Convert ArrayBuffer to Base64 string
@@ -139,16 +223,38 @@ const DiaryEncryption = (function() {
      *
      * @param {string} password - User's password
      * @param {string} salt - User's encryption salt (base64)
+     * @param {boolean} remember - Whether to persist key in IndexedDB
      * @returns {Promise<boolean>} - True if successful
      */
-    async function initialize(password, salt) {
+    async function initialize(password, salt, remember = false) {
         try {
             _diaryKey = await deriveKey(password, salt);
+
+            if (remember) {
+                await saveKeyToStorage(_diaryKey);
+                localStorage.setItem('diary_key_saved', 'true');
+            }
+
             return true;
         } catch (error) {
             console.error('Failed to initialize encryption:', error);
             return false;
         }
+    }
+
+    /**
+     * Try to restore key from IndexedDB
+     * @returns {Promise<boolean>} - True if key was restored
+     */
+    async function tryRestoreKey() {
+        if (_diaryKey) return true;
+
+        const savedKey = await loadKeyFromStorage();
+        if (savedKey) {
+            _diaryKey = savedKey;
+            return true;
+        }
+        return false;
     }
 
     /**
@@ -159,10 +265,26 @@ const DiaryEncryption = (function() {
     }
 
     /**
-     * Clear the encryption key from memory
+     * Check if key is saved in storage
+     */
+    function isKeySaved() {
+        return localStorage.getItem('diary_key_saved') === 'true';
+    }
+
+    /**
+     * Clear the encryption key from memory and storage
      */
     function clear() {
         _diaryKey = null;
+    }
+
+    /**
+     * Clear everything including stored key
+     */
+    async function clearAll() {
+        _diaryKey = null;
+        await clearKeyFromStorage();
+        localStorage.removeItem('diary_key_saved');
     }
 
     /**
@@ -273,8 +395,11 @@ const DiaryEncryption = (function() {
         generateSalt,
         generateIV,
         initialize,
+        tryRestoreKey,
         isInitialized,
+        isKeySaved,
         clear,
+        clearAll,
         encrypt,
         decrypt,
         encryptDiaryEntry,
