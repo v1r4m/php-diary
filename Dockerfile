@@ -58,8 +58,7 @@ php artisan view:clear\n\
 php artisan cache:clear || true\n\
 \n\
 # Debug: show database connection info\n\
-echo "DB_HOST: $DB_HOST"\n\
-echo "DB_DATABASE: $DB_DATABASE"\n\
+echo "DATABASE_URL set: ${DATABASE_URL:+yes}"\n\
 \n\
 # Wait for database to be ready\n\
 echo "Waiting for database..."\n\
