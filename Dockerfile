@@ -40,7 +40,9 @@ RUN mkdir -p /var/www/storage/framework/sessions \
     /var/www/storage/framework/views \
     /var/www/storage/framework/cache \
     /var/www/storage/logs \
+    /var/www/storage/database \
     /var/www/bootstrap/cache && \
+    touch /var/www/storage/database/diary.sqlite && \
     chown -R www-data:www-data /var/www && \
     chmod -R 775 /var/www/storage /var/www/bootstrap/cache
 
@@ -51,26 +53,23 @@ RUN composer install --no-dev --optimize-autoloader
 RUN echo '#!/bin/bash\n\
 set -e\n\
 \n\
+# Ensure SQLite database exists and has correct permissions\n\
+mkdir -p /var/www/storage/database\n\
+touch /var/www/storage/database/diary.sqlite\n\
+chown -R www-data:www-data /var/www/storage\n\
+chmod -R 775 /var/www/storage\n\
+\n\
 # Clear cached config to use runtime env vars\n\
 php artisan config:clear\n\
 php artisan route:clear\n\
 php artisan view:clear\n\
 php artisan cache:clear || true\n\
 \n\
-# Debug: show database connection info\n\
-echo "DATABASE_URL set: ${DATABASE_URL:+yes}"\n\
-\n\
-# Wait for database to be ready\n\
-echo "Waiting for database..."\n\
-for i in $(seq 1 30); do\n\
-  php artisan migrate:status > /dev/null 2>&1 && break\n\
-  echo "Attempt $i: Database not ready, waiting..."\n\
-  sleep 2\n\
-done\n\
-\n\
 # Run migrations\n\
+echo "Running migrations..."\n\
 php artisan migrate --force\n\
 \n\
+echo "Starting services..."\n\
 # Start PHP-FPM in background\n\
 php-fpm -D\n\
 \n\

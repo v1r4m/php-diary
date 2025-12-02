@@ -5,6 +5,10 @@ services:
     runtime: docker
     dockerfilePath: ./Dockerfile
     dockerContext: .
+    disk:
+      name: diary-data
+      mountPath: /var/www/storage
+      sizeGB: 1
     envVars:
       - key: APP_NAME
         value: "Diary Service"
@@ -17,20 +21,12 @@ services:
       - key: APP_URL
         sync: false
       - key: DB_CONNECTION
-        value: pgsql
-      - key: DATABASE_URL
-        fromDatabase:
-          name: diary-db
-          property: connectionString
+        value: sqlite
+      - key: DB_DATABASE
+        value: /var/www/storage/database/diary.sqlite
       - key: LOG_CHANNEL
         value: stderr
       - key: SESSION_DRIVER
         value: file
       - key: CACHE_DRIVER
         value: file
-
-databases:
-  - name: diary-db
-    databaseName: diary_db
-    user: diary_user
-    plan: free
