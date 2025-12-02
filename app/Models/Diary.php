@@ -16,10 +16,15 @@ class Diary extends Model
      */
     protected $fillable = [
         'user_id',
+        'is_encrypted',
         'title',
         'body_ciphertext',
         'salt',
         'iv',
+    ];
+
+    protected $casts = [
+        'is_encrypted' => 'boolean',
     ];
 
     /**

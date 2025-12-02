@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DiaryController;
+use App\Http\Controllers\PublicDiaryController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -59,14 +60,20 @@ Route::get('/api/info', function () {
             'End-to-end encryption',
             'Client-side key derivation',
             'AES-256-GCM encryption',
-            'Zero-knowledge architecture'
+            'Zero-knowledge architecture',
+            'Public diary sharing'
         ],
         'security' => [
             'Diary content encrypted with user password',
             'Admins cannot read diary content',
             'Each diary has unique salt and IV',
             'Password recovery = data loss (by design)',
-            'Dual authentication: session + diary_token'
+            'Dual authentication: session + diary_token',
+            'Public diaries stored in plaintext (user choice)'
         ]
     ]);
 });
+
+// Public profile routes (must be last to avoid catching other routes)
+Route::get('/@{username}', [PublicDiaryController::class, 'index'])->name('public.profile');
+Route::get('/@{username}/{diary}', [PublicDiaryController::class, 'show'])->name('public.diary');

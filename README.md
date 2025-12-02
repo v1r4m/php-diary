@@ -1,6 +1,6 @@
 ## zero knowledge diary
 * Laravel 10 (PHP 8.2)
-* PostgreSQL 16
+* SQLite
 
 ```
 docker-compose up -d --build

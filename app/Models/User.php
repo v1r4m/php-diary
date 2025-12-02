@@ -18,6 +18,7 @@ class User extends Authenticatable
      */
     protected $fillable = [
         'name',
+        'username',
         'email',
         'password',
         'diary_token_hash',
@@ -50,6 +51,14 @@ class User extends Authenticatable
     public function diaries()
     {
         return $this->hasMany(Diary::class);
+    }
+
+    /**
+     * Get public (non-encrypted) diaries for the user.
+     */
+    public function publicDiaries()
+    {
+        return $this->hasMany(Diary::class)->where('is_encrypted', false);
     }
 
     /**

@@ -20,6 +20,7 @@
     let unlockModal, diaryApp, diaryList, editorModal, deleteModal;
     let unlockForm, unlockPassword, unlockError;
     let diaryForm, diaryIdInput, diaryTitleInput, diaryContentInput, editorTitle;
+    let diaryPublicCheckbox, publicWarning;
 
     /**
      * Initialize DOM element references
@@ -41,11 +42,15 @@
         diaryContentInput = document.getElementById('diary-content');
         editorTitle = document.getElementById('editor-title');
 
+        diaryPublicCheckbox = document.getElementById('diary-public');
+        publicWarning = document.getElementById('public-warning');
+
         // Read user data from data attributes (CSP-compliant)
         const userDataEl = document.getElementById('user-data');
         if (userDataEl) {
             USER_DATA = {
                 id: parseInt(userDataEl.dataset.userId, 10),
+                username: userDataEl.dataset.username || '',
                 encryptionSalt: userDataEl.dataset.encryptionSalt,
                 hasDiaryToken: userDataEl.dataset.hasDiaryToken === 'true'
             };
@@ -181,22 +186,31 @@
         const fragment = document.createDocumentFragment();
 
         for (const diary of diaries) {
-            try {
-                // Decrypt diary entry (title + content stored together)
-                const decrypted = await DiaryEncryption.decryptDiaryEntry(diary.body_ciphertext, diary.iv);
+            if (diary.is_encrypted === false) {
+                // Public diary - plaintext
+                diary._decryptedTitle = diary.title;
+                diary._decryptedContent = diary.body_ciphertext;
+                diary._isPublic = true;
 
-                // Store decrypted data for later use
-                diary._decryptedTitle = decrypted.title;
-                diary._decryptedContent = decrypted.content;
-
-                const card = createDiaryCard(diary, decrypted.title, decrypted.content);
+                const card = createDiaryCard(diary, diary.title, diary.body_ciphertext);
                 fragment.appendChild(card);
+            } else {
+                // Private diary - encrypted
+                try {
+                    const decrypted = await DiaryEncryption.decryptDiaryEntry(diary.body_ciphertext, diary.iv);
 
-            } catch (error) {
-                console.error('Failed to decrypt diary:', diary.id, error);
-                // Show encrypted entry placeholder
-                const card = createEncryptedCard(diary);
-                fragment.appendChild(card);
+                    diary._decryptedTitle = decrypted.title;
+                    diary._decryptedContent = decrypted.content;
+                    diary._isPublic = false;
+
+                    const card = createDiaryCard(diary, decrypted.title, decrypted.content);
+                    fragment.appendChild(card);
+
+                } catch (error) {
+                    console.error('Failed to decrypt diary:', diary.id, error);
+                    const card = createEncryptedCard(diary);
+                    fragment.appendChild(card);
+                }
             }
         }
 
@@ -224,15 +238,26 @@
         const header = document.createElement('div');
         header.className = 'diary-card-header';
 
+        const titleWrapper = document.createElement('div');
+
         const titleEl = document.createElement('h3');
         titleEl.className = 'diary-card-title';
+        titleEl.style.display = 'inline';
         titleEl.textContent = title;
+
+        titleWrapper.appendChild(titleEl);
+
+        // Add public/private badge
+        const badge = document.createElement('span');
+        badge.className = 'diary-card-badge ' + (diary._isPublic ? 'badge-public' : 'badge-private');
+        badge.textContent = diary._isPublic ? '공개' : '비공개';
+        titleWrapper.appendChild(badge);
 
         const dateEl = document.createElement('span');
         dateEl.className = 'diary-card-date';
         dateEl.textContent = date;
 
-        header.appendChild(titleEl);
+        header.appendChild(titleWrapper);
         header.appendChild(dateEl);
 
         const previewEl = document.createElement('p');
@@ -301,14 +326,19 @@
             diaryIdInput.value = diary.id;
             diaryTitleInput.value = diary._decryptedTitle || '';
             diaryContentInput.value = diary._decryptedContent || '';
+            diaryPublicCheckbox.checked = diary._isPublic || false;
             currentDiaryId = diary.id;
         } else {
             editorTitle.textContent = 'New Entry';
             diaryIdInput.value = '';
             diaryTitleInput.value = '';
             diaryContentInput.value = '';
+            diaryPublicCheckbox.checked = false;
             currentDiaryId = null;
         }
+
+        // Show/hide warning based on checkbox state
+        publicWarning.style.display = diaryPublicCheckbox.checked ? 'block' : 'none';
 
         editorModal.style.display = 'flex';
         diaryTitleInput.focus();
@@ -331,6 +361,7 @@
         const title = diaryTitleInput.value.trim();
         const content = diaryContentInput.value.trim();
         const id = diaryIdInput.value;
+        const isPublic = diaryPublicCheckbox.checked;
 
         if (!title || !content) {
             alert('Title and content are required');
@@ -342,15 +373,26 @@
         saveBtn.textContent = 'Saving...';
 
         try {
-            // Encrypt title and content together as a single blob
-            const encrypted = await DiaryEncryption.encryptDiaryEntry(title, content);
+            let payload;
 
-            const payload = {
-                title: '[encrypted]', // Placeholder - actual title is in body_ciphertext
-                body_ciphertext: encrypted.ciphertext,
-                salt: encrypted.salt,
-                iv: encrypted.iv
-            };
+            if (isPublic) {
+                // Public diary - send plaintext
+                payload = {
+                    is_public: true,
+                    title: title,
+                    content: content
+                };
+            } else {
+                // Private diary - encrypt
+                const encrypted = await DiaryEncryption.encryptDiaryEntry(title, content);
+                payload = {
+                    is_public: false,
+                    title: '[encrypted]',
+                    body_ciphertext: encrypted.ciphertext,
+                    salt: encrypted.salt,
+                    iv: encrypted.iv
+                };
+            }
 
             let data;
             if (id) {
@@ -456,6 +498,11 @@
 
         document.getElementById('cancel-delete').addEventListener('click', closeDeleteModal);
         document.getElementById('confirm-delete').addEventListener('click', handleDelete);
+
+        // Public checkbox toggle
+        diaryPublicCheckbox.addEventListener('change', () => {
+            publicWarning.style.display = diaryPublicCheckbox.checked ? 'block' : 'none';
+        });
 
         // Close modals on backdrop click
         editorModal.addEventListener('click', (e) => {

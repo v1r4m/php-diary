@@ -55,6 +55,18 @@
                         <textarea id="diary-content" rows="15" required placeholder="Write your diary entry..."></textarea>
                     </div>
 
+                    <div class="form-group visibility-toggle">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="diary-public">
+                            <span>공개 일기로 설정</span>
+                        </label>
+                        <p class="visibility-warning" id="public-warning" style="display: none;">
+                            공개 일기는 암호화되지 않으며, 누구나 볼 수 있습니다.
+                            <br>
+                            <small>공개 주소: <code>/@{{ auth()->user()->username ?? '[username 설정 필요]' }}</code></small>
+                        </p>
+                    </div>
+
                     <div class="form-actions">
                         <button type="button" id="cancel-editor" class="btn btn-secondary">Cancel</button>
                         <button type="submit" class="btn btn-primary" id="save-btn">Save</button>
@@ -79,6 +91,7 @@
 
 <div id="user-data"
      data-user-id="{{ auth()->user()->id }}"
+     data-username="{{ auth()->user()->username ?? '' }}"
      data-encryption-salt="{{ auth()->user()->encryption_salt }}"
      data-has-diary-token="{{ auth()->user()->diary_token_hash ? 'true' : 'false' }}"
      style="display: none;"></div>
