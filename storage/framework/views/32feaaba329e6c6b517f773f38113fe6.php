@@ -15,6 +15,13 @@
                     <label for="unlock-password">Password</label>
                     <input type="password" id="unlock-password" required autocomplete="current-password">
                 </div>
+                <div class="form-group checkbox-group">
+                    <label>
+                        <input type="checkbox" id="unlock-remember">
+                        <span>이 브라우저에서 기억하기</span>
+                    </label>
+                    <span class="form-hint">체크하면 비밀번호를 다시 입력하지 않아도 됩니다.</span>
+                </div>
                 <button type="submit" class="btn btn-primary btn-block">Unlock</button>
             </form>
         </div>
