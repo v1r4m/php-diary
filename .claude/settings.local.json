@@ -9,7 +9,9 @@
       "Bash(curl:*)",
       "Bash(docker-compose logs:*)",
       "Bash(docker-compose restart:*)",
-      "Bash(php artisan make:migration:*)"
+      "Bash(php artisan make:migration:*)",
+      "Bash(cat:*)",
+      "Bash(ls:*)"
     ],
     "deny": [],
     "ask": []

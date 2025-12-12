@@ -4,108 +4,312 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?php echo e($user->name); ?>의 일기 - Diary</title>
-    <link rel="stylesheet" href="<?php echo e(asset('css/app.css')); ?>">
     <style>
-        .public-header {
-            text-align: center;
-            padding: 3rem 1rem;
-            border-bottom: 1px solid #e0e0e0;
-            margin-bottom: 2rem;
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
-        .public-header h1 {
-            font-size: 2rem;
-            margin-bottom: 0.5rem;
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #fafafa;
+            min-height: 100vh;
         }
-        .public-header .username {
-            color: #666;
-            font-size: 1rem;
-        }
-        .diary-list {
-            max-width: 800px;
+        .container {
+            max-width: 500px;
             margin: 0 auto;
-            padding: 0 1rem;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
         }
-        .diary-item {
-            background: #fff;
-            border-radius: 8px;
-            padding: 1.5rem;
-            margin-bottom: 1rem;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-            transition: box-shadow 0.2s;
+
+        /* Header */
+        .header {
+            text-align: center;
+            padding: 2rem 0;
         }
-        .diary-item:hover {
-            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-        }
-        .diary-item a {
-            text-decoration: none;
-            color: inherit;
-        }
-        .diary-item h2 {
-            font-size: 1.25rem;
-            margin-bottom: 0.5rem;
+        .header h1 {
+            font-size: 1.5rem;
+            font-weight: 600;
             color: #333;
         }
-        .diary-item .date {
-            font-size: 0.875rem;
+        .header .username {
             color: #888;
-            margin-bottom: 0.75rem;
+            font-size: 0.9rem;
+            margin-top: 0.25rem;
         }
-        .diary-item .preview {
-            color: #555;
-            line-height: 1.6;
+
+        /* Calendar */
+        .calendar {
+            flex: 1;
+            padding: 1rem 0;
         }
-        .empty-state {
+        .weekdays {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 4px;
+            margin-bottom: 0.5rem;
+        }
+        .weekday {
             text-align: center;
-            padding: 4rem 1rem;
-            color: #666;
+            font-size: 0.7rem;
+            color: #999;
+            padding: 8px 0;
         }
-        .pagination-wrapper {
+        .days {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 4px;
+        }
+        .day {
+            aspect-ratio: 1;
             display: flex;
+            flex-direction: column;
+            align-items: center;
             justify-content: center;
-            margin-top: 2rem;
-            padding-bottom: 2rem;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: background 0.2s;
         }
-        .back-link {
-            display: block;
+        .day:hover {
+            background: rgba(0, 0, 0, 0.05);
+        }
+        .day.empty {
+            cursor: default;
+        }
+        .day.empty:hover {
+            background: transparent;
+        }
+        .day .emoji {
+            font-size: 1.5rem;
+            line-height: 1;
+        }
+        .day .placeholder {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: rgba(0, 0, 0, 0.08);
+        }
+        .day .date {
+            font-size: 0.65rem;
+            color: #888;
+            margin-top: 4px;
+        }
+        .day.has-diary {
+            cursor: pointer;
+        }
+        .day.has-diary:hover {
+            background: rgba(0, 0, 0, 0.08);
+            transform: scale(1.05);
+        }
+        .day.today .date {
+            color: #4a90d9;
+            font-weight: 600;
+        }
+
+        /* Navigation */
+        .nav {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 2rem;
+            padding: 1rem 0;
+        }
+        .nav button {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 50%;
+            transition: background 0.2s;
+        }
+        .nav button:hover {
+            background: rgba(0, 0, 0, 0.08);
+        }
+        .nav button svg {
+            width: 24px;
+            height: 24px;
+            color: #333;
+        }
+        .nav .month-label {
+            font-size: 1rem;
+            color: #333;
+            min-width: 140px;
             text-align: center;
-            margin-top: 2rem;
-            color: #666;
+        }
+
+        /* Bottom Sheet Overlay */
+        .overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 100;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+        }
+        .overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        /* Bottom Sheet */
+        .bottom-sheet {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: #fff;
+            border-radius: 16px 16px 0 0;
+            z-index: 101;
+            max-height: 80vh;
+            transform: translateY(100%);
+            transition: transform 0.3s ease-out;
+            pointer-events: none;
+        }
+        .bottom-sheet.active {
+            transform: translateY(0);
+            pointer-events: auto;
+        }
+        .sheet-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid #eee;
+        }
+        .sheet-header h2 {
+            font-size: 1.5rem;
+        }
+        .sheet-header .date {
+            font-size: 0.85rem;
+            color: #888;
+        }
+        .sheet-close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #888;
+            padding: 4px;
+        }
+        .sheet-content {
+            padding: 1.5rem;
+            overflow-y: auto;
+            max-height: calc(80vh - 80px);
+            line-height: 1.8;
+            color: #444;
+            white-space: pre-wrap;
+        }
+
+        /* Back link */
+        .back-link {
+            text-align: center;
+            padding: 1rem;
+        }
+        .back-link a {
+            color: #888;
+            text-decoration: none;
+            font-size: 0.9rem;
+        }
+        .back-link a:hover {
+            color: #333;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <header class="public-header">
+        <header class="header">
             <h1><?php echo e($user->name); ?>의 일기</h1>
             <p class="username">{{ $user->username }}</p>
         </header>
 
-        <div class="diary-list">
-            <?php $__empty_1 = true; $__currentLoopData = $diaries; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $diary): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
-                <article class="diary-item">
-                    <a href="<?php echo e(route('public.diary', ['username' => $user->username, 'diary' => $diary->id])); ?>">
-                        <h2><?php echo e($diary->title); ?></h2>
-                        <p class="date"><?php echo e($diary->created_at->format('Y년 m월 d일')); ?></p>
-                        <p class="preview"><?php echo e(Str::limit($diary->body_ciphertext, 200)); ?></p>
-                    </a>
-                </article>
-            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
-                <div class="empty-state">
-                    <h3>아직 공개된 일기가 없습니다</h3>
-                    <p><?php echo e($user->name); ?>님이 공개한 일기가 여기에 표시됩니다.</p>
-                </div>
-            <?php endif; ?>
+        <div class="calendar">
+            <div class="weekdays">
+                <?php $__currentLoopData = ['S', 'M', 'T', 'W', 'T', 'F', 'S']; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $day): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                    <div class="weekday"><?php echo e($day); ?></div>
+                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+            </div>
+            <div class="days">
+                <?php
+                    $firstDay = \Carbon\Carbon::create($year, $month, 1);
+                    $daysInMonth = $firstDay->daysInMonth;
+                    $startDayOfWeek = $firstDay->dayOfWeek;
+                    $today = now()->format('Y-m-d');
+                ?>
 
-            <?php if($diaries->hasPages()): ?>
-                <div class="pagination-wrapper">
-                    <?php echo e($diaries->links()); ?>
+                
+                <?php for($i = 0; $i < $startDayOfWeek; $i++): ?>
+                    <div class="day empty"></div>
+                <?php endfor; ?>
 
-                </div>
-            <?php endif; ?>
+                
+                <?php for($day = 1; $day <= $daysInMonth; $day++): ?>
+                    <?php
+                        $date = \Carbon\Carbon::create($year, $month, $day)->format('Y-m-d');
+                        $diary = $diaries->get($date);
+                        $isToday = $date === $today;
+                    ?>
+
+                    <?php if($diary): ?>
+                        <div class="day has-diary <?php echo e($isToday ? 'today' : ''); ?>"
+                             data-title="<?php echo e($diary->title); ?>"
+                             data-date="<?php echo e($diary->created_at->format('Y년 m월 d일')); ?>"
+                             data-content="<?php echo e($diary->body_ciphertext); ?>">
+                            <span class="emoji"><?php echo e($diary->title); ?></span>
+                            <span class="date"><?php echo e($day); ?></span>
+                        </div>
+                    <?php else: ?>
+                        <div class="day <?php echo e($isToday ? 'today' : ''); ?>">
+                            <div class="placeholder"></div>
+                            <span class="date"><?php echo e($day); ?></span>
+                        </div>
+                    <?php endif; ?>
+                <?php endfor; ?>
+            </div>
         </div>
 
-        <a href="/" class="back-link">← 홈으로</a>
+        <nav class="nav">
+            <?php
+                $prevMonth = \Carbon\Carbon::create($year, $month, 1)->subMonth();
+                $nextMonth = \Carbon\Carbon::create($year, $month, 1)->addMonth();
+            ?>
+            <a href="?year=<?php echo e($prevMonth->year); ?>&month=<?php echo e($prevMonth->month); ?>">
+                <button type="button">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                        <path fill-rule="evenodd" d="M7.72 12.53a.75.75 0 0 1 0-1.06l7.5-7.5a.75.75 0 1 1 1.06 1.06L9.31 12l6.97 6.97a.75.75 0 1 1-1.06 1.06l-7.5-7.5Z" clip-rule="evenodd" />
+                    </svg>
+                </button>
+            </a>
+            <span class="month-label"><?php echo e(\Carbon\Carbon::create($year, $month, 1)->format('Y년 n월')); ?></span>
+            <a href="?year=<?php echo e($nextMonth->year); ?>&month=<?php echo e($nextMonth->month); ?>">
+                <button type="button">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                        <path fill-rule="evenodd" d="M16.28 11.47a.75.75 0 0 1 0 1.06l-7.5 7.5a.75.75 0 0 1-1.06-1.06L14.69 12 7.72 5.03a.75.75 0 0 1 1.06-1.06l7.5 7.5Z" clip-rule="evenodd" />
+                    </svg>
+                </button>
+            </a>
+        </nav>
+
+        <div class="back-link">
+            <a href="/">← 홈으로</a>
+        </div>
     </div>
+
+    <div class="overlay" id="overlay"></div>
+    <div class="bottom-sheet" id="bottomSheet">
+        <div class="sheet-header">
+            <div>
+                <h2 id="sheetTitle"></h2>
+                <p class="date" id="sheetDate"></p>
+            </div>
+            <button class="sheet-close" id="sheetClose">×</button>
+        </div>
+        <div class="sheet-content" id="sheetContent"></div>
+    </div>
+
+    <script src="<?php echo e(asset('js/calendar.js')); ?>"></script>
 </body>
 </html>
 <?php /**PATH /var/www/resources/views/public/profile.blade.php ENDPATH**/ ?>

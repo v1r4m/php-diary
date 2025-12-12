@@ -2,6 +2,14 @@
 /public/hot
 /public/storage
 /storage/*.key
+/storage/framework/cache/*
+/storage/framework/sessions/*
+/storage/framework/views/*
+/storage/logs/*
+!/storage/framework/cache/.gitkeep
+!/storage/framework/sessions/.gitkeep
+!/storage/framework/views/.gitkeep
+!/storage/logs/.gitkeep
 /vendor
 .env
 .env.backup
@@ -14,5 +22,3 @@ yarn-error.log
 /.vscode
 .DS_Store
 README-original.md
-/storage/framework/sessions
-/storage/logs

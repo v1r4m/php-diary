@@ -6,6 +6,7 @@ services:
     container_name: diary-app
     restart: unless-stopped
     working_dir: /var/www
+    command: php-fpm
     volumes:
       - ./:/var/www
       - ./docker/php/local.ini:/usr/local/etc/php/conf.d/local.ini
@@ -14,6 +15,7 @@ services:
     depends_on:
       - db
     environment:
+      - DB_CONNECTION=pgsql
       - DB_HOST=db
       - DB_PORT=5432
       - DB_DATABASE=${DB_DATABASE:-diary_db}
