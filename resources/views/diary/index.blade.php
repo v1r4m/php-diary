@@ -7,8 +7,17 @@
     <!-- Password unlock modal -->
     <div id="unlock-modal" class="modal">
         <div class="modal-content">
-            <h2>Unlock Your Diary</h2>
-            <p>Enter your password to decrypt your diary entries.</p>
+            <h2>🔐 다이어리 암호 설정</h2>
+
+            <div class="info-box">
+                <p><strong>이 암호는 서버에 저장되지 않아요.</strong></p>
+                <p>오직 당신만 일기를 열어볼 수 있습니다.</p>
+            </div>
+
+            <div class="tip-box">
+                <p>같은 암호 → 이전 일기도 열림</p>
+                <p>다른 암호 → 이전 일기 안 열림</p>
+            </div>
 
             <div id="unlock-error" class="error-message" style="display: none;"></div>
 
@@ -22,7 +31,7 @@
                         <input type="checkbox" id="unlock-remember">
                         <span>이 브라우저에서 기억하기</span>
                     </label>
-                    <span class="form-hint">체크하면 비밀번호를 다시 입력하지 않아도 됩니다.</span>
+                    <span class="form-hint">체크하면 암호를 다시 입력하지 않아도 됩니다.</span>
                 </div>
                 <button type="submit" class="btn btn-primary btn-block">Unlock</button>
             </form>

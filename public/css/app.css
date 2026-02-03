@@ -414,6 +414,43 @@ body {
     margin-bottom: 0;
 }
 
+/* Info and tip boxes */
+.info-box {
+    padding: 15px;
+    background-color: #e8f4fd;
+    border: 1px solid #b8daff;
+    border-radius: 8px;
+    margin-bottom: 15px;
+}
+
+.info-box p {
+    margin: 0;
+    color: #004085;
+    font-size: 0.95rem;
+}
+
+.info-box p + p {
+    margin-top: 5px;
+}
+
+.tip-box {
+    padding: 15px;
+    background-color: #fff8e6;
+    border: 1px solid #ffe69c;
+    border-radius: 8px;
+    margin-bottom: 20px;
+}
+
+.tip-box p {
+    margin: 0;
+    color: #664d03;
+    font-size: 0.9rem;
+}
+
+.tip-box p + p {
+    margin-top: 5px;
+}
+
 /* Visibility toggle */
 .visibility-toggle {
     padding: 15px;
