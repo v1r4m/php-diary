@@ -1,6 +1,6 @@
 /**
  * Authentication handling for login and registration
- * Generates diary_token from password for API authentication
+ * Note: Diary encryption password is set separately in the diary unlock modal
  */
 
 (function() {
@@ -59,7 +59,7 @@
         setLoading(submitBtn, true);
 
         try {
-            // Step 1: Authenticate with server
+            // Authenticate with server
             const response = await fetch('/login', {
                 method: 'POST',
                 headers: {
@@ -76,34 +76,8 @@
                 throw new Error(data.message || 'Login failed');
             }
 
-            // Step 2: Generate diary_token from password
-            const diaryToken = await DiaryEncryption.generateDiaryToken(password, data.user.id);
-
-            // Step 3: Store diary_token in localStorage
-            DiaryEncryption.storeDiaryToken(diaryToken);
-
-            // Step 4: Send diary_token hash to server for future verification
-            const tokenResponse = await fetch('/diary-token', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': csrfToken,
-                    'Accept': 'application/json'
-                },
-                body: JSON.stringify({ diary_token: diaryToken })
-            });
-
-            if (!tokenResponse.ok) {
-                console.warn('Failed to store diary token on server');
-            }
-
-            // Step 5: Initialize encryption with password
-            await DiaryEncryption.initialize(password, data.user.encryption_salt);
-
-            // Step 6: Store encryption salt temporarily for diary unlock
-            sessionStorage.setItem('temp_salt', data.user.encryption_salt);
-
-            // Step 7: Redirect to diary page
+            // Redirect to diary page
+            // Diary password will be set separately in the unlock modal
             window.location.href = data.redirect;
 
         } catch (error) {
@@ -140,7 +114,7 @@
         setLoading(submitBtn, true);
 
         try {
-            // Step 1: Register with server
+            // Register with server
             const response = await fetch('/register', {
                 method: 'POST',
                 headers: {
@@ -167,34 +141,8 @@
                 throw new Error(data.message || 'Registration failed');
             }
 
-            // Step 2: Generate diary_token from password
-            const diaryToken = await DiaryEncryption.generateDiaryToken(password, data.user.id);
-
-            // Step 3: Store diary_token in localStorage
-            DiaryEncryption.storeDiaryToken(diaryToken);
-
-            // Step 4: Send diary_token hash to server
-            const tokenResponse = await fetch('/diary-token', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': csrfToken,
-                    'Accept': 'application/json'
-                },
-                body: JSON.stringify({ diary_token: diaryToken })
-            });
-
-            if (!tokenResponse.ok) {
-                console.warn('Failed to store diary token on server');
-            }
-
-            // Step 5: Initialize encryption
-            await DiaryEncryption.initialize(password, data.user.encryption_salt);
-
-            // Step 6: Store encryption salt temporarily
-            sessionStorage.setItem('temp_salt', data.user.encryption_salt);
-
-            // Step 7: Redirect to diary page
+            // Redirect to diary page
+            // Diary password will be set separately in the unlock modal
             window.location.href = data.redirect;
 
         } catch (error) {
