@@ -113,25 +113,6 @@ class AuthController extends Controller
     }
 
     /**
-     * Store diary token hash on the server.
-     * Called from client after generating diary_token from password.
-     */
-    public function storeDiaryToken(Request $request)
-    {
-        $validated = $request->validate([
-            'diary_token' => ['required', 'string', 'size:64'], // SHA-256 hex = 64 chars
-        ]);
-
-        $user = Auth::user();
-        $user->diary_token_hash = hash('sha256', $validated['diary_token']);
-        $user->save();
-
-        return response()->json([
-            'success' => true,
-        ]);
-    }
-
-    /**
      * Get current user info (for page refresh scenarios).
      */
     public function me(Request $request)
@@ -151,7 +132,6 @@ class AuthController extends Controller
                 'name' => $user->name,
                 'email' => $user->email,
                 'encryption_salt' => $user->encryption_salt,
-                'has_diary_token' => !empty($user->diary_token_hash),
             ],
         ]);
     }

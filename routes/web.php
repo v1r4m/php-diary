@@ -37,7 +37,6 @@ Route::middleware('guest')->group(function () {
 Route::middleware('auth')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
     Route::get('/me', [AuthController::class, 'me'])->name('me');
-    Route::post('/diary-token', [AuthController::class, 'storeDiaryToken'])->name('diary.token.store');
 
     // Diary page (view)
     Route::get('/diary', [DiaryController::class, 'index'])->name('diary.index');
@@ -46,8 +45,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/settings', [SettingsController::class, 'index'])->name('settings.index');
     Route::post('/settings/username', [SettingsController::class, 'updateUsername'])->name('settings.username');
 
-    // Diary API routes (require both auth session AND diary_token)
-    Route::middleware('diary.token')->prefix('api/diary')->group(function () {
+    // Diary API routes
+    Route::prefix('api/diary')->group(function () {
         Route::get('/', [DiaryController::class, 'list'])->name('diary.list');
         Route::get('/{id}', [DiaryController::class, 'show'])->name('diary.show');
         Route::post('/', [DiaryController::class, 'store'])->name('diary.store');
@@ -73,7 +72,6 @@ Route::get('/api/info', function () {
             'Admins cannot read diary content',
             'Each diary has unique salt and IV',
             'Password recovery = data loss (by design)',
-            'Dual authentication: session + diary_token',
             'Public diaries stored in plaintext (user choice)'
         ]
     ]);

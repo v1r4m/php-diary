@@ -52,26 +52,18 @@
             USER_DATA = {
                 id: parseInt(userDataEl.dataset.userId, 10),
                 username: userDataEl.dataset.username || '',
-                encryptionSalt: userDataEl.dataset.encryptionSalt,
-                hasDiaryToken: userDataEl.dataset.hasDiaryToken === 'true'
+                encryptionSalt: userDataEl.dataset.encryptionSalt
             };
         }
     }
 
     /**
-     * Make API request with diary token
+     * Make API request
      */
     async function apiRequest(url, options = {}) {
-        const diaryToken = DiaryEncryption.getDiaryToken();
-
-        if (!diaryToken) {
-            throw new Error('Diary token not found. Please log in again.');
-        }
-
         const headers = {
             'Content-Type': 'application/json',
             'X-CSRF-TOKEN': csrfToken,
-            'X-DIARY-TOKEN': diaryToken,
             'Accept': 'application/json',
             ...options.headers
         };
@@ -84,13 +76,6 @@
         const data = await response.json();
 
         if (!response.ok) {
-            if (data.code === 'DIARY_TOKEN_MISSING' || data.code === 'DIARY_TOKEN_INVALID') {
-                // Token issue - need to re-authenticate
-                DiaryEncryption.clearDiaryToken();
-                DiaryEncryption.clear();
-                window.location.href = '/login';
-                throw new Error('Session expired. Please log in again.');
-            }
             throw new Error(data.message || 'API request failed');
         }
 
@@ -122,23 +107,6 @@
             if (!success) {
                 showUnlockError('Failed to initialize encryption');
                 return;
-            }
-
-            // If user doesn't have diary_token stored, generate and store it
-            if (!DiaryEncryption.getDiaryToken() || !USER_DATA.hasDiaryToken) {
-                const diaryToken = await DiaryEncryption.generateDiaryToken(password, USER_DATA.id);
-                DiaryEncryption.storeDiaryToken(diaryToken);
-
-                // Store on server
-                await fetch('/diary-token', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': csrfToken,
-                        'Accept': 'application/json'
-                    },
-                    body: JSON.stringify({ diary_token: diaryToken })
-                });
             }
 
             // Hide unlock modal and show diary app
@@ -480,7 +448,7 @@
         initElements();
 
         // Try to restore saved key from IndexedDB
-        if (DiaryEncryption.isKeySaved() && DiaryEncryption.getDiaryToken()) {
+        if (DiaryEncryption.isKeySaved()) {
             const restored = await DiaryEncryption.tryRestoreKey();
             if (restored) {
                 unlockModal.style.display = 'none';
@@ -492,7 +460,7 @@
         }
 
         // Check if encryption is already initialized (from login/register)
-        if (DiaryEncryption.isInitialized() && DiaryEncryption.getDiaryToken()) {
+        if (DiaryEncryption.isInitialized()) {
             unlockModal.style.display = 'none';
             diaryApp.style.display = 'block';
             loadDiaries();

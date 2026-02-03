@@ -109,7 +109,6 @@
      data-user-id="{{ auth()->user()->id }}"
      data-username="{{ auth()->user()->username ?? '' }}"
      data-encryption-salt="{{ auth()->user()->encryption_salt }}"
-     data-has-diary-token="{{ auth()->user()->diary_token_hash ? 'true' : 'false' }}"
      style="display: none;"></div>
 @endsection
 
