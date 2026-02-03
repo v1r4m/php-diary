@@ -7,17 +7,17 @@
     <!-- Password unlock modal -->
     <div id="unlock-modal" class="modal">
         <div class="modal-content">
-            <h2>🔐 다이어리 암호 설정</h2>
-
-            <div class="info-box">
-                <p><strong>이 암호는 서버에 저장되지 않아요.</strong></p>
-                <p>오직 당신만 일기를 열어볼 수 있습니다.</p>
+            <div class="unlock-header">
+                <div class="unlock-icon">🔐</div>
+                <h2>다이어리 암호</h2>
+                <p class="unlock-subtitle">서버에 저장되지 않는 나만의 열쇠</p>
             </div>
 
-            <div class="tip-box">
-                <p>같은 암호 → 이전 일기도 열림</p>
-                <p>다른 암호 → 이전 일기 안 열림</p>
-            </div>
+            <ul class="unlock-info">
+                <li><span class="dot dot-blue"></span>로그인 비밀번호와 별개예요</li>
+                <li><span class="dot dot-green"></span>이전과 같은 암호 → 이전 일기도 열림</li>
+                <li><span class="dot dot-yellow"></span>이전과 다른 암호 → 이전 일기 안 열림</li>
+            </ul>
 
             <div id="unlock-error" class="error-message" style="display: none;"></div>
 
@@ -79,7 +79,7 @@
                         <p class="visibility-warning" id="public-warning" style="display: none;">
                             공개 일기는 암호화되지 않으며, 누구나 볼 수 있습니다.
                             <br>
-                            <small>공개 주소: <code>/@{{ auth()->user()->username ?? '[username 설정 필요]' }}</code></small>
+                            <small>공개 주소는 우측 상단 '설정'페이지에서 설정할 수 있어요.</small>
                         </p>
                     </div>
 
