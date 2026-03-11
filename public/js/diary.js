@@ -12,6 +12,9 @@
     let diaries = [];
     let currentDiaryId = null;
     let deleteTargetId = null;
+    let currentPage = 1;
+    let hasMorePages = false;
+    let isLoading = false;
 
     // User data (read from data attributes instead of inline script for CSP compliance)
     let USER_DATA = null;
@@ -122,16 +125,25 @@
     }
 
     /**
-     * Load and display all diaries
+     * Load and display diaries (with pagination)
      */
-    async function loadDiaries() {
-        diaryList.innerHTML = '<div class="loading">Loading...</div>';
+    async function loadDiaries(page = 1, append = false) {
+        if (isLoading) return;
+        isLoading = true;
+
+        if (!append) {
+            diaryList.innerHTML = '<div class="loading">Loading...</div>';
+            diaries = [];
+            currentPage = 1;
+        }
 
         try {
-            const data = await apiRequest('/api/diary');
-            diaries = data.diaries;
+            const data = await apiRequest(`/api/diary?page=${page}`);
+            const newDiaries = data.diaries;
+            hasMorePages = data.pagination.has_more;
+            currentPage = data.pagination.current_page;
 
-            if (diaries.length === 0) {
+            if (!append && newDiaries.length === 0) {
                 diaryList.innerHTML = `
                     <div class="empty-state">
                         <h3>No diary entries yet</h3>
@@ -142,20 +154,32 @@
             }
 
             // Decrypt and render diaries
-            await renderDiaries();
+            await renderDiaries(newDiaries, append);
 
         } catch (error) {
-            diaryList.innerHTML = `<div class="error-message">${escapeHtml(error.message)}</div>`;
+            if (!append) {
+                diaryList.innerHTML = `<div class="error-message">${escapeHtml(error.message)}</div>`;
+            }
+        } finally {
+            isLoading = false;
         }
+    }
+
+    /**
+     * Load more diaries (next page)
+     */
+    async function loadMore() {
+        if (!hasMorePages || isLoading) return;
+        await loadDiaries(currentPage + 1, true);
     }
 
     /**
      * Render diary list
      */
-    async function renderDiaries() {
+    async function renderDiaries(newDiaries, append = false) {
         const fragment = document.createDocumentFragment();
 
-        for (const diary of diaries) {
+        for (const diary of newDiaries) {
             if (diary.is_encrypted === false) {
                 // Public diary - plaintext
                 diary._decryptedTitle = diary.title;
@@ -182,10 +206,33 @@
                     fragment.appendChild(card);
                 }
             }
+            diaries.push(diary);
         }
 
-        diaryList.innerHTML = '';
+        // Remove existing load more button if any
+        const existingLoadMore = document.getElementById('load-more-btn');
+        if (existingLoadMore) {
+            existingLoadMore.remove();
+        }
+
+        if (!append) {
+            diaryList.innerHTML = '';
+        }
         diaryList.appendChild(fragment);
+
+        // Add "Load More" button if there are more pages
+        if (hasMorePages) {
+            const loadMoreBtn = document.createElement('button');
+            loadMoreBtn.id = 'load-more-btn';
+            loadMoreBtn.className = 'btn btn-secondary btn-block load-more-btn';
+            loadMoreBtn.textContent = '더 보기';
+            loadMoreBtn.addEventListener('click', async () => {
+                loadMoreBtn.disabled = true;
+                loadMoreBtn.textContent = '로딩 중...';
+                await loadMore();
+            });
+            diaryList.appendChild(loadMoreBtn);
+        }
     }
 
     /**

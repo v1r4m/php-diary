@@ -31,15 +31,23 @@ class DiaryController extends Controller
     public function list(Request $request)
     {
         $user = Auth::user();
+        $perPage = 10;
 
         $diaries = $user->diaries()
             ->select(['id', 'is_encrypted', 'title', 'body_ciphertext', 'salt', 'iv', 'created_at', 'updated_at'])
             ->orderBy('created_at', 'desc')
-            ->get();
+            ->paginate($perPage);
 
         return response()->json([
             'success' => true,
-            'diaries' => $diaries,
+            'diaries' => $diaries->items(),
+            'pagination' => [
+                'current_page' => $diaries->currentPage(),
+                'last_page' => $diaries->lastPage(),
+                'per_page' => $diaries->perPage(),
+                'total' => $diaries->total(),
+                'has_more' => $diaries->hasMorePages(),
+            ],
         ]);
     }
 

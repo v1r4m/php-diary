@@ -350,6 +350,12 @@ body {
     font-size: 0.9rem;
 }
 
+/* Load more button */
+.load-more-btn {
+    margin-top: 20px;
+    padding: 15px;
+}
+
 /* Empty state */
 .empty-state {
     text-align: center;

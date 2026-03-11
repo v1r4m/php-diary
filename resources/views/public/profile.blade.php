@@ -158,18 +158,19 @@
         .bottom-sheet {
             position: fixed;
             bottom: 0;
-            left: 0;
-            right: 0;
+            left: 50%;
+            width: 653px;
+            max-width: 100%;
             background: #fff;
             border-radius: 16px 16px 0 0;
             z-index: 101;
             max-height: 80vh;
-            transform: translateY(100%);
+            transform: translate(-50%, 100%);
             transition: transform 0.3s ease-out;
             pointer-events: none;
         }
         .bottom-sheet.active {
-            transform: translateY(0);
+            transform: translate(-50%, 0);
             pointer-events: auto;
         }
         .sheet-header {
@@ -222,7 +223,6 @@
     <div class="container">
         <header class="header">
             <h1>{{ $user->name }}의 일기</h1>
-            <p class="username">@{{ $user->username }}</p>
         </header>
 
         <div class="calendar">
